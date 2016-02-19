@@ -1,7 +1,8 @@
-package hieu.org;
+package org.weiky;
 
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -19,7 +20,7 @@ import java.util.concurrent.Executors;
  * @author weiky
  *
  */
-public class HieuMasterIdea {
+public class PortingStatusProgramm {
 
 	private static String userNameMSSql;
 	private static String passwordMSSql;
@@ -34,38 +35,59 @@ public class HieuMasterIdea {
 	private static int maximalrowPerWorker = 50;
 
 	public static void main(String[] args) throws Exception {
-		executor = Executors.newFixedThreadPool(10);
-		
-		// Credentials
-		userNameMSSql = args[0];
-		passwordMSSql = args[1];
-		passwordHana = args[3];
-		userNameHana = args[2];
-		
-		urlsqlserver = args[4];
-		urlhana = args[5];
-		
-		
-		//needs to be proper
-		String outputFile = "";
-		String outputEncoding = "UTF-8";
-		
-		Iterator<String> it;
-		
-		ArrayList<String> systemtables = setUpSystemTables();
-		
-		Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-		Connection connmssql = DriverManager.getConnection(urlsqlserver, userNameMSSql, passwordMSSql);
-		System.out.println("MS SQL connected ");
 
-		Connection connhana = DriverManager.getConnection(urlhana, userNameHana, passwordHana);
-		System.out.println("SAP HANA connected ");
 
-		ArrayList<String> schemaList = getAllSchemas(systemtables, connmssql);
+		try{
+			if(args[0]=="help" ){
+				printHelp();
+			} else{
 
-		it = schemaList.iterator();
-		showDiffDatabeses(it,outputFile,outputEncoding);
+				executor = Executors.newFixedThreadPool(10);
 
+				// Credentials
+				userNameMSSql = args[0];
+				passwordMSSql = args[1];
+
+				userNameHana = args[2];
+				passwordHana = args[3];
+
+				urlsqlserver = "jdbc:sqlserver://"+args[4]+";";
+				urlhana = "jdbc:sap://"+args[5];
+
+
+				String outputFile = getCurrentDirectory();
+				String outputEncoding = "UTF-8";
+
+
+				Iterator<String> it;
+
+				ArrayList<String> systemtables = setUpSystemTables();
+
+				Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+				Connection connmssql = DriverManager.getConnection(urlsqlserver, userNameMSSql, passwordMSSql);
+				System.out.println("MS SQL connected ");
+
+				Connection connhana = DriverManager.getConnection(urlhana, userNameHana, passwordHana);
+				System.out.println("SAP HANA connected ");
+
+				ArrayList<String> schemaList = getAllSchemas(systemtables, connmssql);
+
+				it = schemaList.iterator();
+				showDiffDatabeses(it,outputFile,outputEncoding);
+			}
+		} catch(ArrayIndexOutOfBoundsException e ){
+			printHelp();
+		}
+	}
+
+	private static void printHelp() {
+		System.out.println("input arguments order: usernameSqlServer PasswordSqlServer usernameHana passwordHana urlSqlServer urlHana");
+		System.out.println("for example:\" java -jar porting_status_programm-1.0.jar sqluser pw hanauser pw localhost\\TESTDB 15.29.29.12:30015");
+
+	}
+
+	private static String getCurrentDirectory() throws Exception{
+		return new java.io.File(".").getCanonicalPath();
 	}
 
 	/**
@@ -107,9 +129,9 @@ public class HieuMasterIdea {
 
 		Double sumHana = 0.0;
 		Double sumMs = 0.0;
-		
+
 		BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), outputEncoding));
-		
+
 		while (it.hasNext()) {
 			System.out.println("");
 			bw.write("\n");
